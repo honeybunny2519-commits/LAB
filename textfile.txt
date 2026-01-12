@@ -1,0 +1,67 @@
+import heapq 
+# State representation: (missionaries_left, cannibals_left, boat_position) 
+# boat_position: 0 for left bank, 1 for right bank 
+initial_state = (3, 3, 0) # 3 missionaries, 3 cannibals, boat on left 
+goal_state = (0, 0, 1) # 0 missionaries, 0 cannibals, boat on right 
+boat_capacity = 2 
+def is_valid_state(state): 
+ m, c, _ = state
+ m_right, c_right, _ = (3 - m, 3 - c, 1 - _) 
+ # Number of missionaries and cannibals must be non-negative and not exceed total  if not (0 <= m <= 3 and 0 <= c <= 3): 
+ return False 
+ if not (0 <= m_right <= 3 and 0 <= c_right <= 3): 
+ return False 
+ # Cannibals cannot outnumber missionaries on either bank (unless missionaries are 0)  if (m > 0 and c > m): 
+ return False 
+ if (m_right > 0 and c_right > m_right): 
+ return False 
+ return True 
+def get_next_states(current_state): 
+ m, c, boat_pos = current_state 
+ next_states = [] 
+ # Define possible moves: (delta_m, delta_c) 
+ moves = [(1, 0), (2, 0), (0, 1), (0, 2), (1, 1)] 
+ for dm, dc in moves: 
+ if boat_pos == 0: # Boat on left bank, moving to right 
+ new_m = m - dm 
+ new_c = c - dc 
+ new_boat_pos = 1 
+ else: # Boat on right bank, moving to left 
+ new_m = m + dm 
+ new_c = c + dc 
+ new_boat_pos = 0
+ next_state = (new_m, new_c, new_boat_pos) 
+ if is_valid_state(next_state): 
+ next_states.append(next_state) 
+ return next_states 
+# Heuristic function (h_cost): Estimate of cost from current state to goal 
+# A simple heuristic: Number of people remaining on the left bank (multiplied by a factor if boat is  on right) 
+def h_cost(state): 
+ m, c, boat_pos = state 
+ # A* requires an admissible heuristic (never overestimates the cost). 
+ # This heuristic counts the number of people on the starting bank. 
+ # Each boat trip can move at most 2 people. 
+ # So, (m + c) / boat_capacity gives a lower bound on trips. 
+ # If the boat is on the right, it needs an extra trip back to pick up people.  return (m + c) // boat_capacity + boat_pos 
+def a_star_search(): 
+ # priority_queue: stores (f_cost, g_cost, state, path) 
+ priority_queue = [(h_cost(initial_state), 0, initial_state, [initial_state])] 
+ visited_costs = {initial_state: 0} 
+ while priority_queue: 
+ f_cost, g_cost, current_state, path = heapq.heappop(priority_queue) 
+ if current_state == goal_state: 
+ return path 
+ for next_state in get_next_states(current_state): 
+ # Each move has a cost of 1 (one boat trip)
+ new_g_cost = g_cost + 1 
+ if next_state not in visited_costs or new_g_cost < visited_costs[next_state]:  visited_costs[next_state] = new_g_cost 
+ new_f_cost = new_g_cost + h_cost(next_state) 
+ heapq.heappush(priority_queue, (new_f_cost, new_g_cost, next_state, path +  [next_state])) 
+ return None 
+# Main execution 
+solution = a_star_search() 
+if solution: 
+ print("Solution Path (Missionaries on Left, Cannibals on Left, Boat Position):")  for i, state in enumerate(solution): 
+ print(f"Step {i}: {state}") 
+else: 
+ print("No solution found.") 
